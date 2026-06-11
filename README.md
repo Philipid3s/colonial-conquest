@@ -19,7 +19,7 @@ build armies, and conquer the world territory by territory.
   flicker animation and synthesized gunfire
 - **Army commitment slider** — choose exactly how many armies to move or send into battle
 - **Map navigation** — zoom with the mouse wheel (centered on the cursor) and pan by
-  dragging with the right mouse button or with the arrow keys
+  dragging the map with any mouse button or with the arrow keys
 - **Victory by domination** — control 65 % of the world to win; lose your last territory
   and you're out
 
@@ -47,8 +47,9 @@ python main.py
    neighbor, and choose your attack force. Attacks are staged and resolved at the end of
    the round, after every power has moved.
 5. `ENTER`/`SPACE` advances the phase, `ESC` clears the selection.
-6. **Map navigation** — mouse wheel zooms at the cursor, right-button (or middle-button)
-   drag pans, arrow keys pan, `R` resets to the full-world view.
+6. **Map navigation** — mouse wheel zooms at the cursor; hold any mouse button and move
+   to drag the map (a short click still selects); arrow keys pan; `R` resets to the
+   full-world view.
 
 Richer neutral territories defend harder — and watch the sea lanes: invasions can come by
 ship (e.g. Brazil ↔ West Africa, Japan ↔ Korea).

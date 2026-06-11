@@ -36,6 +36,8 @@ class GameState:
         self.message = ""
         self.attack_queue: list = []   # human's staged attacks this phase
         self.drag_from = None          # screen pos of an active map drag
+        self.press_pos = None          # left-button press pos (click vs drag)
+        self.dragging = False          # left-drag passed the click threshold
 
     def clear_selection(self):
         self.selected = None
@@ -279,6 +281,13 @@ def run_game(screen, clock):
 
             elif event.type == pygame.MOUSEMOTION:
                 renderer.handle_motion(event.pos)
+                if state.press_pos and not state.dragging:
+                    # left button held: passing the threshold turns the
+                    # press into a map drag instead of a click
+                    if (abs(event.pos[0] - state.press_pos[0]) > 5
+                            or abs(event.pos[1] - state.press_pos[1]) > 5):
+                        state.dragging = True
+                        state.drag_from = state.press_pos
                 if state.drag_from:
                     camera.pan(state.drag_from[0] - event.pos[0],
                                state.drag_from[1] - event.pos[1])
@@ -298,11 +307,20 @@ def run_game(screen, clock):
                     handle_button(action, player, phase, turn_mgr, world, state,
                                   animator, renderer, players)
                 elif MAP_RECT.collidepoint(event.pos):
+                    # defer click vs drag decision to button-up
+                    state.press_pos = event.pos
+                    state.dragging = False
+
+            elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                if state.press_pos and not state.dragging:
                     clicked = world.territory_at(
-                        camera.screen_to_world(event.pos))
+                        camera.screen_to_world(state.press_pos))
                     if clicked:
                         handle_map_click(clicked, player, phase,
                                          world, turn_mgr, state, dialog)
+                state.press_pos = None
+                state.dragging = False
+                state.drag_from = None
 
             elif (event.type == pygame.MOUSEBUTTONDOWN
                     and event.button in (2, 3)
