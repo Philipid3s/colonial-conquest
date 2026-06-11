@@ -21,9 +21,11 @@ class Renderer:
              selected: Optional[Territory],
              hovered: Optional[Territory],
              valid_targets: Optional[set],
-             message: str = ""):
+             message: str = "",
+             camera=None):
         self.screen.fill(C_BG)
-        draw_map(self.screen, world, selected, hovered, valid_targets)
+        draw_map(self.screen, world, selected, hovered, valid_targets,
+                 camera=camera)
         self.hud.update_buttons(phase, current_player)
         self.hud.draw(self.screen, turn, phase, current_player, all_players,
                       selected, message)

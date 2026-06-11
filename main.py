@@ -16,6 +16,7 @@ from ui.battle_animation import BattleAnimator
 from ui.menu import StartMenu
 from ui.gameover import GameOverScreen
 from ui.amount_dialog import AmountDialog
+from ui.camera import Camera
 
 
 def make_players(human_faction: Faction) -> list:
@@ -34,6 +35,7 @@ class GameState:
         self.valid_targets: set = set()
         self.message = ""
         self.attack_queue: list = []   # human's staged attacks this phase
+        self.drag_from = None          # screen pos of an active map drag
 
     def clear_selection(self):
         self.selected = None
@@ -245,6 +247,7 @@ def run_game(screen, clock):
     animator = BattleAnimator(screen)
     dialog   = AmountDialog(screen)
     state    = GameState()
+    camera   = Camera()
 
     # Skip automatic income phase on game start
     if turn_mgr.current_phase == "income":
@@ -276,8 +279,18 @@ def run_game(screen, clock):
 
             elif event.type == pygame.MOUSEMOTION:
                 renderer.handle_motion(event.pos)
-                state.hovered = (world.territory_at(event.pos)
-                                 if MAP_RECT.collidepoint(event.pos) else None)
+                if state.drag_from:
+                    camera.pan(state.drag_from[0] - event.pos[0],
+                               state.drag_from[1] - event.pos[1])
+                    state.drag_from = event.pos
+                state.hovered = (
+                    world.territory_at(camera.screen_to_world(event.pos))
+                    if MAP_RECT.collidepoint(event.pos) else None)
+
+            elif event.type == pygame.MOUSEWHEEL:
+                mpos = pygame.mouse.get_pos()
+                if MAP_RECT.collidepoint(mpos):
+                    camera.zoom_at(mpos, 1.15 if event.y > 0 else 1 / 1.15)
 
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 action = renderer.handle_click(event.pos)
@@ -285,14 +298,25 @@ def run_game(screen, clock):
                     handle_button(action, player, phase, turn_mgr, world, state,
                                   animator, renderer, players)
                 elif MAP_RECT.collidepoint(event.pos):
-                    clicked = world.territory_at(event.pos)
+                    clicked = world.territory_at(
+                        camera.screen_to_world(event.pos))
                     if clicked:
                         handle_map_click(clicked, player, phase,
                                          world, turn_mgr, state, dialog)
 
+            elif (event.type == pygame.MOUSEBUTTONDOWN
+                    and event.button in (2, 3)
+                    and MAP_RECT.collidepoint(event.pos)):
+                state.drag_from = event.pos
+
+            elif event.type == pygame.MOUSEBUTTONUP and event.button in (2, 3):
+                state.drag_from = None
+
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     state.clear_selection()
+                elif event.key == pygame.K_r:
+                    camera.reset()
                 elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
                     state.clear_selection()
                     if phase == PHASE_ATTACK:
@@ -303,10 +327,19 @@ def run_game(screen, clock):
                         turn_mgr.check_eliminations(world)
                     state.message = f"Phase: {turn_mgr.current_phase.upper()}"
 
+        # Smooth keyboard panning (held arrow keys)
+        keys = pygame.key.get_pressed()
+        pan_px = 14
+        dx = pan_px * (keys[pygame.K_RIGHT] - keys[pygame.K_LEFT])
+        dy = pan_px * (keys[pygame.K_DOWN] - keys[pygame.K_UP])
+        if dx or dy:
+            camera.pan(dx, dy)
+
         renderer.draw(world, turn_mgr.turn_number, phase,
                       player, players,
                       state.selected, state.hovered,
-                      state.valid_targets, state.message)
+                      state.valid_targets, state.message,
+                      camera=camera)
         clock.tick(FPS)
 
 

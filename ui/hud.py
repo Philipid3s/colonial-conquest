@@ -152,6 +152,12 @@ class HUD:
                 f"Armies to place: {player.pending_armies}", True, C_GREEN)
             surface.blit(pa_txt, (BOTTOM_BAR_RECT.x + 640, BOTTOM_BAR_RECT.y + 70))
 
+        # Map navigation hint
+        hint = _font(10).render(
+            "Mouse wheel: zoom  ·  Right-drag: pan  ·  R: reset view",
+            True, (110, 115, 125))
+        surface.blit(hint, (BOTTOM_BAR_RECT.x + 10, BOTTOM_BAR_RECT.bottom - 20))
+
         # Draw buttons
         for btn in self.buttons:
             btn.draw(surface)
