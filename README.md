@@ -15,8 +15,10 @@ build armies, and conquer the world territory by territory.
   same starting income; you play one, the AI plays the rest
 - **Turn-based phases** — income → purchase → move → attack, with attacks from all powers
   staged secretly and resolved together at the end of each round
-- **Battle resolution theatre** — the map zooms into each contested territory with a
-  flicker animation and synthesized gunfire
+- **Battle resolution theatre** — the map zooms into each contested territory and plays
+  the fight round by round: live army counters, an attack arrow, muzzle flashes,
+  synthesized gunfire, and a CAPTURED/REPULSED verdict with screen shake — skippable
+  with `SPACE` (one battle) or `ESC` (all)
 - **Army commitment slider** — choose exactly how many armies to move or send into battle
 - **Map navigation** — zoom with the mouse wheel (centered on the cursor) and pan by
   dragging the map with any mouse button or with the arrow keys

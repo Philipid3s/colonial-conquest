@@ -48,6 +48,35 @@ def resolve_combat(attacker_armies: int, defender_armies: int,
     )
 
 
+def battle_rounds(attacker_armies: int, defender_armies: int,
+                  attacking_count: int
+                  ) -> Tuple[List[Tuple[CombatResult, int, int]], int, int, bool]:
+    """
+    Fight until the territory is captured or the attacker cannot continue,
+    keeping the per-round progression (for animation).
+    Returns (rounds, remaining_attacker_armies_in_source,
+             final_target_garrison, captured) where rounds is a list of
+    (CombatResult, attackers_left, defenders_left) snapshots.
+    """
+    att = attacking_count
+    dfd = defender_armies
+    source_remainder = attacker_armies - attacking_count  # must stay behind
+    rounds: List[Tuple[CombatResult, int, int]] = []
+
+    while att >= 1 and dfd > 0:
+        result = resolve_combat(att + source_remainder, dfd, att)
+        att -= result.attacker_losses
+        dfd -= result.defender_losses
+        rounds.append((result, max(att, 0), max(dfd, 0)))
+        if att < 1:
+            break
+
+    # Capture needs at least one attacker left standing to occupy.
+    if dfd <= 0 and att >= 1:
+        return rounds, source_remainder, att, True
+    return rounds, source_remainder + max(att, 0), max(dfd, 0), False
+
+
 def full_battle(attacker_armies: int, defender_armies: int,
                 attacking_count: int) -> Tuple[int, int, bool]:
     """
@@ -56,18 +85,6 @@ def full_battle(attacker_armies: int, defender_armies: int,
     final_target_garrison is the occupying force on capture, or the surviving
     defenders on a failed attack (defender losses persist either way).
     """
-    att = attacking_count
-    dfd = defender_armies
-    source_remainder = attacker_armies - attacking_count  # must stay behind
-
-    while att >= 1 and dfd > 0:
-        result = resolve_combat(att + source_remainder, dfd, att)
-        att -= result.attacker_losses
-        dfd -= result.defender_losses
-        if att < 1:
-            break
-
-    # Capture needs at least one attacker left standing to occupy.
-    if dfd <= 0 and att >= 1:
-        return source_remainder, att, True
-    return source_remainder + max(att, 0), max(dfd, 0), False
+    _rounds, src_rem, tgt_final, captured = battle_rounds(
+        attacker_armies, defender_armies, attacking_count)
+    return src_rem, tgt_final, captured
