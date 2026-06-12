@@ -109,14 +109,16 @@ def _end_attack_phase(player, turn_mgr, world, state,
     is_last = turn_mgr.is_last_player()
     battle_turn = turn_mgr.turn_number
 
+    # Resolve the round's battles BEFORE advancing into the next round, so
+    # the next player's income and eliminations use post-battle ownership.
+    if is_last and turn_mgr.round_battles:
+        _run_combined_battles(battle_turn, players, turn_mgr,
+                              world, state, animator, renderer)
+
     # Advance ATTACK → END → next player (skips the empty END phase)
     turn_mgr.advance_phase(world)  # ATTACK → END
     turn_mgr.advance_phase(world)  # END → next player's PURCHASE (income auto)
     turn_mgr.check_eliminations(world)
-
-    if is_last and turn_mgr.round_battles:
-        _run_combined_battles(battle_turn, players, turn_mgr,
-                              world, state, animator, renderer)
 
     return is_last
 
@@ -142,15 +144,17 @@ def run_ai_turn(player, turn_mgr, world, state,
 
     is_last = turn_mgr.is_last_player()
     battle_turn = turn_mgr.turn_number
+    state.message = f"{player.name} finished their turn."
+
+    # Resolve the round's battles BEFORE advancing into the next round, so
+    # the next player's income and eliminations use post-battle ownership.
+    if is_last and turn_mgr.round_battles:
+        _run_combined_battles(battle_turn, players, turn_mgr,
+                              world, state, animator, renderer)
 
     turn_mgr.advance_phase(world)   # ATTACK → END
     turn_mgr.advance_phase(world)   # END → next player's PURCHASE (income auto)
     turn_mgr.check_eliminations(world)
-    state.message = f"{player.name} finished their turn."
-
-    if is_last and turn_mgr.round_battles:
-        _run_combined_battles(battle_turn, players, turn_mgr,
-                              world, state, animator, renderer)
 
     return is_last
 
