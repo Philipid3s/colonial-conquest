@@ -4,7 +4,7 @@ import pygame
 
 from config import (SCREEN_W, SCREEN_H, FPS, MAP_RECT,
                     PHASE_PURCHASE, PHASE_MOVE, PHASE_ATTACK,
-                    MIN_ATTACK_ARMIES)
+                    MIN_ATTACK_ARMIES, C_GOLD, C_GREEN, C_RED)
 from game.faction import Faction
 from game.player import Player
 from game.world import World
@@ -38,6 +38,7 @@ class GameState:
         self.drag_from = None          # screen pos of an active map drag
         self.press_pos = None          # left-button press pos (click vs drag)
         self.dragging = False          # left-drag passed the click threshold
+        self.banner_key = None         # (turn, phase) last announced
 
     def clear_selection(self):
         self.selected = None
@@ -157,6 +158,33 @@ def run_ai_turn(player, turn_mgr, world, state,
     turn_mgr.check_eliminations(world)
 
     return is_last
+
+
+# ── phase announcement ────────────────────────────────────────────────────────
+
+_BANNER_STYLES = {
+    PHASE_PURCHASE: ("PURCHASE PHASE",
+                     "Reinforce your territories", C_GOLD),
+    PHASE_MOVE:     ("MOVE PHASE",
+                     "Redeploy armies between your territories", C_GREEN),
+    PHASE_ATTACK:   ("ATTACK PHASE",
+                     "Stage attacks — battles resolve at the end of the round",
+                     C_RED),
+}
+
+
+def announce_phase(banner, turn_mgr, phase, state):
+    """Show the banner once per (turn, phase) when a human phase begins."""
+    if phase not in _BANNER_STYLES:
+        return
+    key = (turn_mgr.turn_number, phase)
+    if state.banner_key == key:
+        return
+    state.banner_key = key
+    title, hint, color = _BANNER_STYLES[phase]
+    if phase == PHASE_PURCHASE:   # first human phase = start of the turn
+        title = f"TURN {turn_mgr.turn_number} — {title}"
+    banner.show(title, hint, color)
 
 
 # ── button / click handlers ───────────────────────────────────────────────────
@@ -295,6 +323,8 @@ def run_game(screen, clock):
                         animator, renderer, players)
             state.clear_selection()
             continue
+
+        announce_phase(renderer.banner, turn_mgr, phase, state)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
