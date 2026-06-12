@@ -158,12 +158,15 @@ def run_ai_turn(player, turn_mgr, world, state,
 # ── button / click handlers ───────────────────────────────────────────────────
 
 def handle_button(action, player, phase, turn_mgr, world, state,
-                  animator, renderer, players):
+                  animator, renderer, players, dialog):
     if action == "buy_army":
         if player.can_buy_army():
-            player.buy_army()
-            state.message = (f"Army purchased. "
-                             f"Pending: {player.pending_armies}  Gold: ${player.gold}")
+            amount = dialog.run("Buy how many armies?",
+                                player.affordable_armies(), default=1)
+            if amount:
+                player.buy_armies(amount)
+                state.message = (f"Bought {amount}. Click your territories "
+                                 f"to place ({player.pending_armies} pending).")
 
     elif action == "end_turn":
         state.clear_selection()
@@ -177,12 +180,27 @@ def handle_button(action, player, phase, turn_mgr, world, state,
 
 
 def handle_map_click(clicked, player, phase, world, turn_mgr, state, dialog):
-    # Place pending armies immediately on click
-    if phase == PHASE_PURCHASE and player.pending_armies > 0:
-        if clicked.owner == player.faction:
-            player.place_army(clicked)
-            state.message = (f"Placed in {clicked.name}. "
-                             f"Pending: {player.pending_armies}")
+    # Buy-and-place directly on the map (Shift: x5, Ctrl: all affordable)
+    if phase == PHASE_PURCHASE:
+        if clicked.owner != player.faction:
+            if player.pending_armies > 0 or player.can_buy_army():
+                state.message = "You can only reinforce your own territories."
+            return
+        mods = pygame.key.get_mods()
+        if mods & pygame.KMOD_CTRL:
+            count = player.pending_armies + player.affordable_armies()
+        elif mods & pygame.KMOD_SHIFT:
+            count = 5
+        else:
+            count = 1
+        placed = player.reinforce(clicked, count)
+        if placed:
+            state.message = (f"+{placed} in {clicked.name}.  "
+                             f"Gold: ${player.gold}"
+                             + (f"  Pending: {player.pending_armies}"
+                                if player.pending_armies else ""))
+        else:
+            state.message = "No gold left — end the phase when ready."
         return
 
     if phase == PHASE_MOVE:
@@ -305,7 +323,7 @@ def run_game(screen, clock):
                 action = renderer.handle_click(event.pos)
                 if action:
                     handle_button(action, player, phase, turn_mgr, world, state,
-                                  animator, renderer, players)
+                                  animator, renderer, players, dialog)
                 elif MAP_RECT.collidepoint(event.pos):
                     # defer click vs drag decision to button-up
                     state.press_pos = event.pos

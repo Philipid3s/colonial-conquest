@@ -65,7 +65,7 @@ class HUD:
         bw, bh = 110, 32
         gap = 8
         defs = [
-            ("Buy Army",    "buy_army"),
+            ("Buy Armies",  "buy_army"),
             ("End Turn",    "end_turn"),
         ]
         for label, action in defs:
@@ -146,8 +146,20 @@ class HUD:
                 surface.blit(surf, (ix, iy))
                 iy += 18
 
-        # Pending armies notice
-        if player.pending_armies > 0:
+        # Reinforcement status / purchase help
+        if phase == PHASE_PURCHASE:
+            available = player.pending_armies + player.affordable_armies()
+            if available > 0:
+                pa_txt = f_med.render(
+                    f"Armies to place: {available}", True, C_GREEN)
+                surface.blit(pa_txt,
+                             (BOTTOM_BAR_RECT.x + 640, BOTTOM_BAR_RECT.y + 70))
+                tip = _font(11).render(
+                    "Click your territory to place  ·  Shift: ×5  ·  Ctrl: all",
+                    True, C_TEXT)
+                surface.blit(tip,
+                             (BOTTOM_BAR_RECT.x + 640, BOTTOM_BAR_RECT.y + 90))
+        elif player.pending_armies > 0:
             pa_txt = f_med.render(
                 f"Armies to place: {player.pending_armies}", True, C_GREEN)
             surface.blit(pa_txt, (BOTTOM_BAR_RECT.x + 640, BOTTOM_BAR_RECT.y + 70))
